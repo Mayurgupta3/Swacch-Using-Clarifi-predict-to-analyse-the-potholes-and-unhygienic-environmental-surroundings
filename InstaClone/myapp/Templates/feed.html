@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>DashBoard</title>
+
+    <style>
+        body{
+            text-align: center;
+        }
+        button{
+            text-align: justify;
+            margin: 10px 10px 100px 1200px;
+            padding: 12px;
+        }
+
+        h3{
+            text-align: center;
+            height: 20px;
+        }
+        img{
+
+            height: 300px;
+        }
+        span{
+            text-align: center;
+        }
+    </style>
+
+</head>
+<body>
+<button onclick= "location.href = 'post/'" type="button">Create Post</button>
+{% for post in posts %}
+
+    <h3> Posted by: {{ post.user.username }}</h3>
+    <img src="{{ post.image_url }}">
+    <br>
+    <span>{{ post.caption }}</span>
+
+  {% endfor %}
+</body>
+</html>
