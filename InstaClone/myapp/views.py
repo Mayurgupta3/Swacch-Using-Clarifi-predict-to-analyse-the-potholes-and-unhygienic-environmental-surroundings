@@ -3,9 +3,12 @@ from __future__ import unicode_literals
 from django.contrib.auth.hashers import make_password, check_password
 from django.shortcuts import render, redirect
 from datetime import datetime
-from forms import SignUpForm,LoginForm,PostForm
-from models import User, SessionToken, PostModel
+from forms import SignUpForm,LoginForm,PostForm,LikeForm,CommentForm
+from models import User, SessionToken, PostModel, LikeModel, CommentModel
 from InstaClone.settings import BASE_DIR
+from PIL import Image
+from ClarifaiUsage import get_keywords_from_image
+
 
 from imgurpython import ImgurClient
 # Create your views here.
@@ -61,33 +64,88 @@ def post_view(request):
             form = PostForm(request.POST, request.FILES)
             if form.is_valid():
                 image = form.cleaned_data.get('image')
-                caption = form.cleaned_data.get('caption')
-                post = PostModel(user=user, image=image, caption=caption)
-                post.save()
+                main, sub = image.content_type.split('/')
+                if not (main == 'image' and sub.lower() in ['jpeg', 'pjpeg', 'png', 'jpg']):
+                    form = PostForm()
+                    message = {'message': 'Enter JPEG or PNG image','form': form}
+                    return render(request, 'post.html', message)
 
-                path = str(BASE_DIR + '\\' + post.image.url)
+                else:
 
-                client = ImgurClient('31a3f32e7b361e8', '6ad2c7acd06b96d4d2e61ae015c2ea5ae016a059')
-                post.image_url = client.upload_from_path(path,anon=True)['link']
-                post.save()
+                    caption = form.cleaned_data.get('caption')
+                    post = PostModel(user=user, image=image, caption=caption)
+                    post.save()
+                    path = str(BASE_DIR + '\\' + post.image.url)
 
-                return redirect('/feed/')
+                    client = ImgurClient('31a3f32e7b361e8', '6ad2c7acd06b96d4d2e61ae015c2ea5ae016a059')
+                    post.image_url = client.upload_from_path(path,anon=True)['link']
+                    response_clarifai = get_keywords_from_image(post.image_url)
+                    arr_of_dict = response_clarifai['outputs'][0]['data']['concepts']
+                    for i in range(0, len(arr_of_dict)):
+                        keyword = arr_of_dict[i]['name']
+                        value = arr_of_dict[i]['value']
+                        if(keyword == 'Dirty' and value >0.5):
+                            is_dirty=True
+
+                        elif (keyword == 'Clean'and value >0.5):
+                            is_dirty = False
+                        else:
+                            is_dirty =  False
+                    post.is_dirty=is_dirty
+
+                        # Checking the keywords retrieved with the keyword
+                    post.save()
+
+                    return redirect('/feed/')
 
         else:
+            print request.body
             form = PostForm()
         return render(request, 'post.html', {'form' : form})
     else:
         return redirect('/login/')
 
-
 def feed_view(request):
     user = check_validation(request)
     if user:
-
         posts = PostModel.objects.all().order_by('-created_on',)
+        for post in posts:
+            existing_like = LikeModel.objects.filter(post_id=post.id, user=user).first()
+            if existing_like:
+                post.has_liked = True
         return render(request, 'feed.html', {'posts': posts})
     else:
         return redirect('/login/')
+
+def like_view(request):
+    user = check_validation(request)
+    if user and request.method == 'POST':
+        form = LikeForm(request.POST)
+        if form.is_valid():
+            post_id = form.cleaned_data.get('post').id
+            existing_like = LikeModel.objects.filter(post_id=post_id, user=user).first()
+            if not existing_like:
+                LikeModel.objects.create(post_id=post_id, user=user)
+            else:
+                existing_like.delete()
+            return redirect('/feed/')
+    else:
+        return redirect('/login/')
+
+def comment_view(request):
+    user = check_validation(request)
+    if user and request.method == 'POST':
+        form = CommentForm(request.POST)
+        if form.is_valid():
+            post_id = form.cleaned_data.get('post').id
+            comment_text = form.cleaned_data.get('comment_text')
+            comment = CommentModel.objects.create(user=user, post_id=post_id, comment_text=comment_text)
+            comment.save()
+            return redirect('/feed/')
+        else:
+            return redirect('/feed/')
+    else:
+        return redirect('/login')
 
 
 def check_validation(request):
