@@ -8,6 +8,7 @@ from models import User, SessionToken, PostModel, LikeModel, CommentModel
 from InstaClone.settings import BASE_DIR
 from PIL import Image
 from ClarifaiUsage import get_keywords_from_image
+from Sendgrid_usage import send_response
 
 
 from imgurpython import ImgurClient
@@ -57,6 +58,9 @@ def login_view(request):
     return render(request,'login_view.html', dict)
 
 
+
+
+
 def post_view(request):
     user = check_validation(request)
     if user:
@@ -86,6 +90,7 @@ def post_view(request):
                         value = arr_of_dict[i]['value']
                         if(keyword == 'Dirty' and value >0.5):
                             is_dirty=True
+                            send_response(post.image_url)
 
                         elif (keyword == 'Clean'and value >0.5):
                             is_dirty = False
@@ -146,6 +151,16 @@ def comment_view(request):
             return redirect('/feed/')
     else:
         return redirect('/login')
+
+
+def logout_view(request):
+    user = check_validation(request)
+    if user is not None:
+        latest_session = SessionToken.objects.filter(user=user).last()
+        if latest_session:
+            latest_session.delete()
+
+    return redirect("/login/")
 
 
 def check_validation(request):
