@@ -7,7 +7,7 @@ from sendgrid.helpers.mail import *
 
 
 def send_response(post_url):
-    sg = sendgrid.SendGridAPIClient(apikey='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')
+    sg = sendgrid.SendGridAPIClient(apikey='SG')
     receipt = "mgupta7042@gmail.com" # Municiplaity email-id
     from_email = Email("uditk53@gmail.com")
     to_email = Email(receipt)
