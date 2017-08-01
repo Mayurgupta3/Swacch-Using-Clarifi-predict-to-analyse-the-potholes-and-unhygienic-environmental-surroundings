@@ -6,17 +6,10 @@ from sendgrid.helpers.mail import *
 
 
 
-def send_response(post_url):
+def send_response(message_payload):
     sg = sendgrid.SendGridAPIClient(apikey='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')
-    receipt = "mgupta7042@gmail.com" # Municiplaity email-id
-    from_email = Email("uditk53@gmail.com")
-    to_email = Email(receipt)
-    content_message = "<html><body><img src =" + post_url +  "</body></html>"
-    print content_message
-    subject = "Image of dirty area"
-    content = Content("text/html", content_message)
-    mail = Mail(from_email, subject, to_email, content)
-    response = sg.client.mail.send.post(request_body=mail.get())
+    response = sg.client.mail.send.post(request_body=message_payload)
     print(response.status_code)
     print(response.body)
     print(response.headers)
+

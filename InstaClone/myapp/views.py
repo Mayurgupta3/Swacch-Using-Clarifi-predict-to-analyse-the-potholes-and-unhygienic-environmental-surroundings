@@ -90,15 +90,39 @@ def post_view(request):
                         value = arr_of_dict[i]['value']
                         if(keyword == 'Dirty' and value >0.5):
                             is_dirty=True
-                            send_response(post.image_url)
+                            message_payload = {
+                                "personalizations": [
+                                    {
+                                        "to": [
+                                            {
+                                                "email": 'mgupta7042@gmail.com' #authority
+                                            }
+                                        ],
+                                        "subject": 'Dirty area!'
+                                    }
+                                ],
+                                "from": {
+                                    "email": "uditk53@gmail.com",
+                                    "name": 'Swacch Bharat'
+                                },
+                                "content": [
+                                    {
+                                        "type": "text/html",
+                                        "value": "<h1>Swacch Bharat</h1><br><br>  <img src =" + post.image_url + " <br>"
+
+                                    }
+                                ]
+                            }
+
+                            send_response(message_payload)
 
                         elif (keyword == 'Clean'and value >0.5):
                             is_dirty = False
                         else:
                             is_dirty =  False
+
                     post.is_dirty=is_dirty
 
-                        # Checking the keywords retrieved with the keyword
                     post.save()
 
                     return redirect('/feed/')
@@ -145,7 +169,9 @@ def comment_view(request):
             post_id = form.cleaned_data.get('post').id
             comment_text = form.cleaned_data.get('comment_text')
             comment = CommentModel.objects.create(user=user, post_id=post_id, comment_text=comment_text)
+            post = PostModel.objects.filter(id=post_id).first()
             comment.save()
+            comment_email(user.username, post.user.email)
             return redirect('/feed/')
         else:
             return redirect('/feed/')
@@ -170,3 +196,29 @@ def check_validation(request):
       return session.user
   else:
     return None
+
+def comment_email(commentor, to_email):
+    msg_payload = {
+        "personalizations": [
+            {
+                "to": [
+                    {
+                        "email": to_email
+                    }
+                ],
+                "subject": 'Someone reacted to your post!'
+            }
+        ],
+        "from": {
+            "email": "uditk53@gmail.com",
+            "name": 'Swacch Bharat'
+        },
+        "content": [
+            {
+                "type": "text/html",
+                "value": '<h1>Swacch Bharat</h1><br><br> ' +commentor+' just commented on your post. <br>'
+
+            }
+        ]
+    }
+    send_response(msg_payload)

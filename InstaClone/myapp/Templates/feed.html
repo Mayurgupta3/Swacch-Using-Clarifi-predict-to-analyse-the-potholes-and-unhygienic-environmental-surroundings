@@ -7,17 +7,45 @@
     <style>
         body{
             text-align: center;
-        }
-        button{
-            text-align: justify;
-            margin: 10px 10px 100px 1200px;
-            padding: 12px;
+             background: burlywood;
+             font-size: medium;
         }
 
-        h3{
-            text-align: center;
-            height: 20px;
+
+       input [type= "submit"] {
+            color: white;
+            border: 0px;
+            font-size: smaller;
+            border-radius: 15%;
+            font-size: 18px;
+            padding: 5px;
+            margin-top: 10px;
+            margin-bottom: 10px;
+            margin-right: 16px;
         }
+
+
+       h1 {
+            color: firebrick;
+            font-size: 55px;
+        }
+        h3 {
+            color: saddlebrown;
+            font-size: 35px;
+    }
+        p {
+            font-size: 22px;
+             color: saddlebrown;
+        }
+        input[type="text"] {
+            font-size: smaller;
+            width: 150px;
+            height: 15px;
+            background: khaki;
+            border: 0px;
+            padding: 10px 10px 10px 10px;
+            margin-bottom: 10px;
+    }
         img{
 
             height: 300px;
@@ -36,7 +64,9 @@
             {% csrf_token %}
     <input type="submit" class="btn btn-default" value="Logout">
 </form>
+<h1>Feeds</h1>
 {% for post in posts %}
+
 
         <h3> Posted by: {{ post.user.username }}</h3>
         <br>
