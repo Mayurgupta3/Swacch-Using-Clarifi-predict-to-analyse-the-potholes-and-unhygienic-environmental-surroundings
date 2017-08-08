@@ -14,6 +14,7 @@ from Sendgrid_usage import send_response
 from imgurpython import ImgurClient
 # Create your views here.
 
+# Signup form Handler
 def signup_view(request):
     if request.method == "POST":
         form = SignUpForm(request.POST)
@@ -29,6 +30,7 @@ def signup_view(request):
         form = SignUpForm()
     return render(request, 'index.html', {'form': form})
 
+# Login form handler
 def login_view(request):
     dict = {}
     if request.method == "POST":
@@ -58,9 +60,7 @@ def login_view(request):
     return render(request,'login_view.html', dict)
 
 
-
-
-
+# Handing create post button request
 def post_view(request):
     user = check_validation(request)
     if user:
@@ -71,18 +71,20 @@ def post_view(request):
                 main, sub = image.content_type.split('/')
                 if not (main == 'image' and sub.lower() in ['jpeg', 'pjpeg', 'png', 'jpg']):
                     form = PostForm()
+                    # Printing appropriate message when something other than image is uploaded
                     message = {'message': 'Enter JPEG or PNG image','form': form}
                     return render(request, 'post.html', message)
 
                 else:
-
                     caption = form.cleaned_data.get('caption')
                     post = PostModel(user=user, image=image, caption=caption)
                     post.save()
                     path = str(BASE_DIR + '\\' + post.image.url)
 
+                    # Saving image to Imgur cloud
                     client = ImgurClient('31a3f32e7b361e8', '6ad2c7acd06b96d4d2e61ae015c2ea5ae016a059')
                     post.image_url = client.upload_from_path(path,anon=True)['link']
+                    # Calling the function to get keywords using Clarifai
                     response_clarifai = get_keywords_from_image(post.image_url)
                     arr_of_dict = response_clarifai['outputs'][0]['data']['concepts']
                     for i in range(0, len(arr_of_dict)):
@@ -90,6 +92,8 @@ def post_view(request):
                         value = arr_of_dict[i]['value']
                         if(keyword == 'Dirty' and value >0.5):
                             is_dirty=True
+                            # If image is dirty then we send email using Sendgrid API to respective authority
+
                             message_payload = {
                                 "personalizations": [
                                     {
@@ -134,10 +138,13 @@ def post_view(request):
     else:
         return redirect('/login/')
 
+
+# Feeds page upon Login
 def feed_view(request):
     user = check_validation(request)
     if user:
         posts = PostModel.objects.all().order_by('-created_on',)
+
         for post in posts:
             existing_like = LikeModel.objects.filter(post_id=post.id, user=user).first()
             if existing_like:
@@ -146,6 +153,8 @@ def feed_view(request):
     else:
         return redirect('/login/')
 
+
+# Like button click request
 def like_view(request):
     user = check_validation(request)
     if user and request.method == 'POST':
@@ -155,12 +164,16 @@ def like_view(request):
             existing_like = LikeModel.objects.filter(post_id=post_id, user=user).first()
             if not existing_like:
                 LikeModel.objects.create(post_id=post_id, user=user)
+                post = PostModel.objects.filter(id=post_id).first()
+                like_email(user.username, post.user.email)
             else:
+                # If already liked, deleting the like
                 existing_like.delete()
             return redirect('/feed/')
     else:
         return redirect('/login/')
 
+# Comment Handler
 def comment_view(request):
     user = check_validation(request)
     if user and request.method == 'POST':
@@ -168,9 +181,11 @@ def comment_view(request):
         if form.is_valid():
             post_id = form.cleaned_data.get('post').id
             comment_text = form.cleaned_data.get('comment_text')
+            # Updating the comment-model upon getting comment text
             comment = CommentModel.objects.create(user=user, post_id=post_id, comment_text=comment_text)
             post = PostModel.objects.filter(id=post_id).first()
             comment.save()
+            # Calling function to email about the comment
             comment_email(user.username, post.user.email)
             return redirect('/feed/')
         else:
@@ -178,7 +193,7 @@ def comment_view(request):
     else:
         return redirect('/login')
 
-
+# Logout Button Handler
 def logout_view(request):
     user = check_validation(request)
     if user is not None:
@@ -188,7 +203,7 @@ def logout_view(request):
 
     return redirect("/login/")
 
-
+# Checking validity of user
 def check_validation(request):
   if request.COOKIES.get('session_token'):
     session = SessionToken.objects.filter(session_token=request.COOKIES.get('session_token')).first()
@@ -197,6 +212,7 @@ def check_validation(request):
   else:
     return None
 
+# Sending email on comment
 def comment_email(commentor, to_email):
     msg_payload = {
         "personalizations": [
@@ -217,6 +233,33 @@ def comment_email(commentor, to_email):
             {
                 "type": "text/html",
                 "value": '<h1>Swacch Bharat</h1><br><br> ' +commentor+' just commented on your post. <br>'
+
+            }
+        ]
+    }
+    send_response(msg_payload)
+
+# Sending email on like
+def like_email(liker, to_email):
+    msg_payload = {
+        "personalizations": [
+            {
+                "to": [
+                    {
+                        "email": to_email
+                    }
+                ],
+                "subject": 'Someone reacted to your post!'
+            }
+        ],
+        "from": {
+            "email": "uditk53@gmail.com",
+            "name": 'Swacch Bharat'
+        },
+        "content": [
+            {
+                "type": "text/html",
+                "value": '<h1>Swacch Bharat</h1><br><br> ' +liker+' just commented on your post. <br>'
 
             }
         ]

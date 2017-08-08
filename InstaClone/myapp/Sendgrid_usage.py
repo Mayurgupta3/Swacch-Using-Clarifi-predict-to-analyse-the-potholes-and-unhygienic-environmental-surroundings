@@ -4,7 +4,7 @@ import sendgrid
 import os
 from sendgrid.helpers.mail import *
 
-
+# Calling Sendgrid API's to sendd email
 
 def send_response(message_payload):
     sg = sendgrid.SendGridAPIClient(apikey='SG')
