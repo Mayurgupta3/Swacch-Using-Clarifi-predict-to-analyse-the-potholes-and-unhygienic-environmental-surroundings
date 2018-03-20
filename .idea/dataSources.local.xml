@@ -6,14 +6,14 @@
       <case-sensitivity plain-identifiers="mixed" quoted-identifiers="mixed" />
       <secret-storage>master_key</secret-storage>
       <auth-required>false</auth-required>
-      <introspection-schemas>*</introspection-schemas>
+      <introspection-schemas>*:*</introspection-schemas>
     </data-source>
     <data-source name="identifier.sqlite [2]" uuid="2f9138cc-8853-4a70-942e-7b8dcb946acc">
       <database-info product="" version="" jdbc-version="" driver-name="" driver-version="" />
       <secret-storage>master_key</secret-storage>
       <auth-required>false</auth-required>
       <first-sync>true</first-sync>
-      <introspection-schemas>*</introspection-schemas>
+      <introspection-schemas>*:*</introspection-schemas>
     </data-source>
   </component>
 </project>
